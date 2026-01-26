@@ -1,0 +1,47 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "health-record-ocr-dev",
+          "appId": "1:98039447169:android:1cfb0615f963e191a51780",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "health-record-ocr-dev",
+          "appId": "1:98039447169:ios:76e947afef3283b6a51780",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "health-record-ocr-dev",
+          "appId": "1:98039447169:ios:76e947afef3283b6a51780",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "health-record-ocr-dev",
+          "configurations": {
+            "android": "1:98039447169:android:1cfb0615f963e191a51780",
+            "ios": "1:98039447169:ios:76e947afef3283b6a51780",
+            "macos": "1:98039447169:ios:76e947afef3283b6a51780",
+            "web": "1:98039447169:web:a5de21bf9ecd44bfa51780",
+            "windows": "1:98039447169:web:29ddd3f4c4d5ce94a51780"
+          }
+        }
+      }
+    }
+  }
+}

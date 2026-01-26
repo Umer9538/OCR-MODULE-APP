@@ -1,0 +1,341 @@
+# Health Record OCR Module
+
+A standalone Flutter feature module that allows users to upload health record images and automatically extract text using on-device OCR. Built as an assessment task for MiGynae app integration.
+
+## Features
+
+- **Email-based identification** - No authentication required, uses email as a lightweight identifier
+- **Image capture** - Take photos using camera or select from gallery
+- **On-device OCR** - Google ML Kit text recognition (works offline, fast, free)
+- **Firebase integration** - Images stored in Firebase Storage, metadata in Firestore
+- **Record retrieval** - Fetch previously uploaded records by email
+- **MiGynae-themed UI** - Pink/feminine design matching the existing app's color scheme
+- **Responsive design** - Adapts to phones, small phones, and tablets
+- **Smooth animations** - Slide, fade, scale, and floating animations throughout
+
+### Nice-to-Have Features (Included)
+
+- Image compression before upload (70% quality JPEG)
+- Loading indicators with animated status messages
+- Success/error toast notifications
+- Animated empty state with floating icon
+- Shimmer loading placeholders
+- Clean separation of UI, services, controllers, and Firebase logic
+
+## Architecture
+
+The project follows **clean architecture** with **separation of concerns**:
+
+```
+lib/
+├── main.dart                           # App entry point
+├── firebase_options.dart               # Firebase configuration (auto-generated)
+└── features/
+    └── health_record/
+        ├── health_record.dart          # Barrel export file
+        │
+        ├── models/
+        │   └── health_record_model.dart    # Data model with JSON serialization
+        │
+        ├── services/                   # External API interactions
+        │   ├── ocr_service.dart            # Google ML Kit OCR
+        │   ├── storage_service.dart        # Firebase Storage operations
+        │   ├── firestore_service.dart      # Firestore CRUD operations
+        │   └── image_service.dart          # Image picker + compression
+        │
+        ├── controllers/                # Business logic & state management
+        │   └── health_record_controller.dart   # ChangeNotifier controller
+        │
+        ├── screens/                    # Page-level UI composition
+        │   └── health_record_screen.dart
+        │
+        ├── widgets/                    # Reusable UI components (max 120 lines each)
+        │   ├── animated_button.dart        # Animated action button with pulse effect
+        │   ├── animated_record_card.dart   # Record card with slide/fade animation
+        │   ├── animated_empty_state.dart   # Empty state with floating animation
+        │   ├── animated_bottom_sheet.dart  # Image source selection sheet
+        │   ├── animated_loading_overlay.dart   # Loading overlay with spinner
+        │   ├── shimmer_loading.dart        # Shimmer placeholder effect
+        │   ├── record_thumbnail.dart       # Thumbnail with Hero animation
+        │   ├── record_detail_sheet.dart    # Bottom sheet for record details
+        │   ├── image_source_option_card.dart   # Camera/gallery option card
+        │   ├── header_section.dart         # App header with icon
+        │   ├── email_form_section.dart     # Email input with validation
+        │   ├── action_buttons_section.dart # Upload/fetch buttons
+        │   └── records_list_section.dart   # Records list with animations
+        │
+        ├── constants/                  # App-wide constants
+        │   ├── app_colors.dart             # MiGynae pink color palette
+        │   ├── app_strings.dart            # UI strings
+        │   ├── app_theme.dart              # Material theme configuration
+        │   └── firebase_constants.dart     # Collection/path names
+        │
+        └── utils/                      # Utility functions
+            └── responsive_utils.dart       # Responsive sizing utilities
+```
+
+## Code Quality Standards
+
+| Standard | Implementation |
+|----------|----------------|
+| Max lines per file | 120 lines |
+| Architecture | Feature-based with separation of concerns |
+| State management | ChangeNotifier pattern |
+| Responsive design | ResponsiveUtils for all screen sizes |
+| Animations | Custom AnimationController-based |
+| Firebase | Dedicated service classes |
+
+## Firebase Structure
+
+### Firestore
+
+```
+Collection: health_records
+├── Document (auto-ID)
+│   ├── email: string           # User's email address
+│   ├── imageUrl: string        # Firebase Storage download URL
+│   ├── extractedText: string   # OCR result
+│   └── createdAt: timestamp    # Upload timestamp
+```
+
+### Firebase Storage
+
+```
+health_records/
+└── {sanitized_email}/
+    └── {timestamp}_{uuid}.jpg
+```
+
+## Setup Instructions
+
+### Prerequisites
+
+- Flutter SDK (3.9.0 or higher)
+- Firebase project with Firestore and Storage enabled
+- Xcode (for iOS)
+- Android Studio (for Android)
+
+### Step 1: Clone/Download the Project
+
+```bash
+git clone <repository-url>
+cd health_record_ocr_module
+```
+
+### Step 2: Firebase Setup
+
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
+2. Enable **Cloud Firestore** (start in test mode for development)
+3. Enable **Firebase Storage** (requires Blaze plan, but free tier is generous)
+4. Add your Flutter app to Firebase:
+
+```bash
+# Install FlutterFire CLI if not installed
+dart pub global activate flutterfire_cli
+
+# Configure Firebase (generates firebase_options.dart)
+flutterfire configure
+```
+
+### Step 3: Update Firestore Security Rules (Development)
+
+Go to Firestore → Rules and add:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+### Step 4: Update Storage Security Rules (Development)
+
+Go to Storage → Rules and add:
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+> **Note:** These are development rules. Use proper security rules in production.
+
+### Step 5: Install Dependencies
+
+```bash
+flutter pub get
+```
+
+### Step 6: Run the App
+
+```bash
+# iOS
+flutter run -d ios
+
+# Android
+flutter run -d android
+
+# Release build (Android)
+flutter build apk --release
+```
+
+## Integration into Existing App
+
+### Option 1: Copy the Module
+
+1. Copy the `lib/features/health_record/` folder to your project
+2. Add dependencies to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  firebase_core: ^3.8.1
+  firebase_storage: ^12.4.0
+  cloud_firestore: ^5.6.0
+  google_mlkit_text_recognition: ^0.14.0
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+  path_provider: ^2.1.5
+  intl: ^0.20.1
+  uuid: ^4.5.1
+```
+
+3. Add iOS permissions to `ios/Runner/Info.plist`:
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Camera access needed to capture health records</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Photo library access needed to select health records</string>
+```
+
+4. Ensure Android `minSdkVersion` is 21+ in `android/app/build.gradle`
+
+5. Add ProGuard rules for release builds in `android/app/proguard-rules.pro`:
+
+```
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.play.core.**
+```
+
+6. Import and use the screen:
+
+```dart
+import 'package:your_app/features/health_record/health_record.dart';
+
+// Navigate to the screen
+Navigator.push(
+  context,
+  MaterialPageRoute(builder: (context) => const HealthRecordScreen()),
+);
+```
+
+### Option 2: Customize Firebase Collection Names
+
+Edit `lib/features/health_record/constants/firebase_constants.dart`:
+
+```dart
+class FirebaseConstants {
+  static const String healthRecordsCollection = 'your_collection_name';
+  static const String healthRecordsStoragePath = 'your_storage_path';
+}
+```
+
+### Option 3: Customize Colors
+
+Edit `lib/features/health_record/constants/app_colors.dart` to match your app's theme.
+
+## OCR Approach
+
+### Google ML Kit Text Recognition (Chosen)
+
+**Why this approach:**
+
+- **On-device processing** - No internet required, works offline
+- **Free** - No API costs or usage limits
+- **Fast** - Processes images in milliseconds
+- **Privacy** - Image data never leaves the device
+- **Accurate** - Works well with printed text, prescriptions, lab reports
+
+**Alternatives considered:**
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| Google Cloud Vision API | Higher accuracy, handwriting support | Costs money, requires internet |
+| Tesseract OCR | Open source | Lower accuracy, larger app size |
+| Firebase ML Kit (Legacy) | Easy setup | Deprecated, use google_mlkit instead |
+
+## Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| firebase_core | ^3.8.1 | Firebase initialization |
+| firebase_storage | ^12.4.0 | Image upload |
+| cloud_firestore | ^5.6.0 | Metadata storage |
+| google_mlkit_text_recognition | ^0.14.0 | On-device OCR |
+| image_picker | ^1.1.2 | Camera/gallery access |
+| flutter_image_compress | ^2.3.0 | Image compression |
+| path_provider | ^2.1.5 | Temp directory access |
+| intl | ^0.20.1 | Date formatting |
+| uuid | ^4.5.1 | Unique filename generation |
+
+## Responsive Design
+
+The module uses `ResponsiveUtils` for adaptive layouts:
+
+| Device | Screen Width | Adaptations |
+|--------|--------------|-------------|
+| Small Phone | < 360dp | Smaller fonts, icons, spacing |
+| Phone | 360-600dp | Standard sizing |
+| Tablet | > 600dp | Larger elements, max content width |
+
+## Error Handling
+
+The module includes error handling for:
+
+- Invalid email format
+- No image selected
+- OCR extraction failures
+- Firebase upload failures
+- Network errors
+
+Errors are displayed as snackbar messages with appropriate styling.
+
+## Testing
+
+To test the module:
+
+1. Enter any valid email address
+2. Click "Upload" and select camera or gallery
+3. Take/select a photo of a health record or any text document
+4. Verify OCR extracts text correctly
+5. Click "Get Previous" to retrieve saved records
+6. Click on a record card to see full details in bottom sheet
+
+## Review Criteria
+
+This module is built to meet the following review criteria:
+
+| Criteria | Implementation |
+|----------|----------------|
+| **Code Quality** | Clean architecture, max 120 lines/file, ChangeNotifier pattern |
+| **Structure** | Feature-based with separation of concerns (models, services, controllers, widgets, screens) |
+| **Firebase Usage** | Dedicated service classes for Storage, Firestore; proper error handling |
+| **UX Logic** | Animated transitions, loading states, empty states, responsive design |
+
+## License
+
+This module is created as an assessment task. Usage rights to be determined upon project acceptance.
+
+## Author
+
+Built with Flutter and Firebase for MiGynae app integration.

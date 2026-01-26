@@ -1,0 +1,35 @@
+{
+    "name": "health_record_ocr_module",
+    "short_name": "health_record_ocr_module",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "Health Record OCR Module is a standalone Flutter feature designed to allow users to upload health record images and automatically extract text using on-device OCR. The module uses an email address as a lightweight identifier (no authentication required) to store and retrieve previously uploaded records.  Users can capture an image using the device camera or select one from the gallery. The image is securely uploaded to Firebase Storage, while the extracted text and related metadata (timestamp, image URL, email) are stored in Firebase Firestore. Previously uploaded records can be retrieved by entering the same email address.  This module is built with clean architecture and clear separation between UI, services, and Firebase logic, making it easy to integrate into an existing Flutter application by simply replacing Firebase configuration files.  The feature is intended as a paid assessment task to evaluate Flutter, Firebase, OCR implementation, code quality, and UX logic, with the goal of extending into long-term collaboration if successful.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

@@ -5,7 +5,7 @@
 ///
 /// Architecture follows separation of concerns:
 /// - Models: Data structures
-/// - Services: External API interactions (Firebase, ML Kit)
+/// - Services: OCR, local storage, local database
 /// - Controllers: Business logic and state management
 /// - Widgets: Reusable UI components
 /// - Screens: Page-level UI composition
@@ -18,8 +18,8 @@ export 'models/health_record_model.dart';
 
 // Services
 export 'services/ocr_service.dart';
-export 'services/storage_service.dart';
-export 'services/firestore_service.dart';
+export 'services/local_storage_service.dart';
+export 'services/local_database_service.dart';
 export 'services/image_service.dart';
 
 // Controllers
@@ -49,7 +49,6 @@ export 'widgets/record_detail_sheet.dart';
 export 'constants/app_colors.dart';
 export 'constants/app_strings.dart';
 export 'constants/app_theme.dart';
-export 'constants/firebase_constants.dart';
 
 // Utils
 export 'utils/responsive_utils.dart';

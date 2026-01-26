@@ -56,7 +56,7 @@ class _AnimatedRecordCardState extends State<AnimatedRecordCard> with SingleTick
           child: Padding(
             padding: EdgeInsets.all(ResponsiveUtils.spacing(16)),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              RecordThumbnail(imageUrl: widget.record.imageUrl, recordId: widget.record.id ?? '', size: ResponsiveUtils.thumbnailSize),
+              RecordThumbnail(imagePath: widget.record.imagePath, recordId: widget.record.id, size: ResponsiveUtils.thumbnailSize),
               SizedBox(width: ResponsiveUtils.spacing(16)),
               Expanded(child: _buildContent()),
               _buildArrow(),

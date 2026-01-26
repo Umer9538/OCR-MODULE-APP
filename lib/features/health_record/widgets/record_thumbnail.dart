@@ -1,16 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../utils/responsive_utils.dart';
 
 /// Thumbnail widget for health record cards
 class RecordThumbnail extends StatelessWidget {
-  final String imageUrl;
-  final String recordId;
+  final String imagePath;
+  final int? recordId;
   final double size;
 
   const RecordThumbnail({
     super.key,
-    required this.imageUrl,
+    required this.imagePath,
     required this.recordId,
     required this.size,
   });
@@ -42,34 +43,22 @@ class RecordThumbnail extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(ResponsiveUtils.cardRadius * 0.8),
-          child: imageUrl.isNotEmpty ? _buildNetworkImage() : _buildPlaceholder(),
+          child: imagePath.isNotEmpty ? _buildFileImage() : _buildPlaceholder(),
         ),
       ),
     );
   }
 
-  Widget _buildNetworkImage() {
-    return Image.network(
-      imageUrl,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Center(
-          child: SizedBox(
-            width: ResponsiveUtils.iconSize(24),
-            height: ResponsiveUtils.iconSize(24),
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.primaryPink,
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          ),
-        );
+  Widget _buildFileImage() {
+    final file = File(imagePath);
+    return FutureBuilder<bool>(
+      future: file.exists(),
+      builder: (context, snapshot) {
+        if (snapshot.data == true) {
+          return Image.file(file, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildErrorIcon());
+        }
+        return _buildPlaceholder();
       },
-      errorBuilder: (context, error, stackTrace) => _buildErrorIcon(),
     );
   }
 

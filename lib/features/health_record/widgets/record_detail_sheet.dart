@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_strings.dart';
@@ -37,12 +38,21 @@ class RecordDetailSheet extends StatelessWidget {
 
   Widget _buildImage() {
     final h = ResponsiveUtils.isTablet ? 300.0 : 250.0;
+    final file = File(record.imagePath);
     return Hero(
       tag: 'record_image_${record.id}',
       child: ClipRRect(
         borderRadius: BorderRadius.circular(ResponsiveUtils.cardRadius),
-        child: record.imageUrl.isNotEmpty
-          ? Image.network(record.imageUrl, height: h, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder(h))
+        child: record.imagePath.isNotEmpty
+          ? FutureBuilder<bool>(
+              future: file.exists(),
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return Image.file(file, height: h, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder(h));
+                }
+                return _placeholder(h);
+              },
+            )
           : _placeholder(h),
       ),
     );

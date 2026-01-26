@@ -7,8 +7,8 @@ A standalone Flutter feature module that allows users to upload health record im
 - **Email-based identification** - No authentication required, uses email as a lightweight identifier
 - **Image capture** - Take photos using camera or select from gallery
 - **On-device OCR** - Google ML Kit text recognition (works offline, fast, free)
-- **Firebase integration** - Images stored in Firebase Storage, metadata in Firestore
-- **Record retrieval** - Fetch previously uploaded records by email
+- **Local storage** - Images and records stored locally on device (SQLite + file system)
+- **Record retrieval** - Fetch previously saved records by email
 - **MiGynae-themed UI** - Pink/feminine design matching the existing app's color scheme
 - **Responsive design** - Adapts to phones, small phones, and tablets
 - **Smooth animations** - Slide, fade, scale, and floating animations throughout
@@ -20,7 +20,7 @@ A standalone Flutter feature module that allows users to upload health record im
 - Success/error toast notifications
 - Animated empty state with floating icon
 - Shimmer loading placeholders
-- Clean separation of UI, services, controllers, and Firebase logic
+- Clean separation of UI, services, controllers, and storage logic
 
 ## Architecture
 
@@ -29,18 +29,17 @@ The project follows **clean architecture** with **separation of concerns**:
 ```
 lib/
 ├── main.dart                           # App entry point
-├── firebase_options.dart               # Firebase configuration (auto-generated)
 └── features/
     └── health_record/
         ├── health_record.dart          # Barrel export file
         │
         ├── models/
-        │   └── health_record_model.dart    # Data model with JSON serialization
+        │   └── health_record_model.dart    # Data model with SQLite serialization
         │
         ├── services/                   # External API interactions
         │   ├── ocr_service.dart            # Google ML Kit OCR
-        │   ├── storage_service.dart        # Firebase Storage operations
-        │   ├── firestore_service.dart      # Firestore CRUD operations
+        │   ├── local_storage_service.dart  # Local file storage operations
+        │   ├── local_database_service.dart # SQLite database operations
         │   └── image_service.dart          # Image picker + compression
         │
         ├── controllers/                # Business logic & state management
@@ -67,8 +66,7 @@ lib/
         ├── constants/                  # App-wide constants
         │   ├── app_colors.dart             # MiGynae pink color palette
         │   ├── app_strings.dart            # UI strings
-        │   ├── app_theme.dart              # Material theme configuration
-        │   └── firebase_constants.dart     # Collection/path names
+        │   └── app_theme.dart              # Material theme configuration
         │
         └── utils/                      # Utility functions
             └── responsive_utils.dart       # Responsive sizing utilities
@@ -83,27 +81,26 @@ lib/
 | State management | ChangeNotifier pattern |
 | Responsive design | ResponsiveUtils for all screen sizes |
 | Animations | Custom AnimationController-based |
-| Firebase | Dedicated service classes |
+| Storage | Local SQLite database + file system |
 
-## Firebase Structure
+## Local Storage Structure
 
-### Firestore
-
-```
-Collection: health_records
-├── Document (auto-ID)
-│   ├── email: string           # User's email address
-│   ├── imageUrl: string        # Firebase Storage download URL
-│   ├── extractedText: string   # OCR result
-│   └── createdAt: timestamp    # Upload timestamp
-```
-
-### Firebase Storage
+### SQLite Database
 
 ```
-health_records/
-└── {sanitized_email}/
-    └── {timestamp}_{uuid}.jpg
+Table: health_records
+├── id: INTEGER PRIMARY KEY AUTOINCREMENT
+├── email: TEXT NOT NULL
+├── image_path: TEXT NOT NULL
+├── extracted_text: TEXT NOT NULL
+└── created_at: INTEGER NOT NULL (milliseconds since epoch)
+```
+
+### File Storage
+
+```
+Documents/health_records/
+└── {sanitized_email}_{timestamp}_{uuid}.jpg
 ```
 
 ## Setup Instructions
@@ -111,7 +108,6 @@ health_records/
 ### Prerequisites
 
 - Flutter SDK (3.9.0 or higher)
-- Firebase project with Firestore and Storage enabled
 - Xcode (for iOS)
 - Android Studio (for Android)
 
@@ -122,60 +118,13 @@ git clone <repository-url>
 cd health_record_ocr_module
 ```
 
-### Step 2: Firebase Setup
-
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
-2. Enable **Cloud Firestore** (start in test mode for development)
-3. Enable **Firebase Storage** (requires Blaze plan, but free tier is generous)
-4. Add your Flutter app to Firebase:
-
-```bash
-# Install FlutterFire CLI if not installed
-dart pub global activate flutterfire_cli
-
-# Configure Firebase (generates firebase_options.dart)
-flutterfire configure
-```
-
-### Step 3: Update Firestore Security Rules (Development)
-
-Go to Firestore → Rules and add:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-
-### Step 4: Update Storage Security Rules (Development)
-
-Go to Storage → Rules and add:
-
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-
-> **Note:** These are development rules. Use proper security rules in production.
-
-### Step 5: Install Dependencies
+### Step 2: Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### Step 6: Run the App
+### Step 3: Run the App
 
 ```bash
 # iOS
@@ -197,9 +146,8 @@ flutter build apk --release
 
 ```yaml
 dependencies:
-  firebase_core: ^3.8.1
-  firebase_storage: ^12.4.0
-  cloud_firestore: ^5.6.0
+  sqflite: ^2.4.1
+  path: ^1.9.0
   google_mlkit_text_recognition: ^0.14.0
   image_picker: ^1.1.2
   flutter_image_compress: ^2.3.0
@@ -239,20 +187,20 @@ Navigator.push(
 );
 ```
 
-### Option 2: Customize Firebase Collection Names
-
-Edit `lib/features/health_record/constants/firebase_constants.dart`:
-
-```dart
-class FirebaseConstants {
-  static const String healthRecordsCollection = 'your_collection_name';
-  static const String healthRecordsStoragePath = 'your_storage_path';
-}
-```
-
-### Option 3: Customize Colors
+### Option 2: Customize Colors
 
 Edit `lib/features/health_record/constants/app_colors.dart` to match your app's theme.
+
+## Switching to Firebase (Future)
+
+This branch uses local storage. To switch to Firebase:
+
+1. Switch to the `master` branch which has Firebase implementation
+2. Or add Firebase dependencies and replace:
+   - `local_storage_service.dart` → `storage_service.dart` (Firebase Storage)
+   - `local_database_service.dart` → `firestore_service.dart` (Firestore)
+
+The modular architecture makes this switch straightforward.
 
 ## OCR Approach
 
@@ -278,13 +226,12 @@ Edit `lib/features/health_record/constants/app_colors.dart` to match your app's 
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| firebase_core | ^3.8.1 | Firebase initialization |
-| firebase_storage | ^12.4.0 | Image upload |
-| cloud_firestore | ^5.6.0 | Metadata storage |
+| sqflite | ^2.4.1 | Local SQLite database |
+| path | ^1.9.0 | File path manipulation |
 | google_mlkit_text_recognition | ^0.14.0 | On-device OCR |
 | image_picker | ^1.1.2 | Camera/gallery access |
 | flutter_image_compress | ^2.3.0 | Image compression |
-| path_provider | ^2.1.5 | Temp directory access |
+| path_provider | ^2.1.5 | App directory access |
 | intl | ^0.20.1 | Date formatting |
 | uuid | ^4.5.1 | Unique filename generation |
 
@@ -305,8 +252,8 @@ The module includes error handling for:
 - Invalid email format
 - No image selected
 - OCR extraction failures
-- Firebase upload failures
-- Network errors
+- Storage failures
+- File system errors
 
 Errors are displayed as snackbar messages with appropriate styling.
 
@@ -329,7 +276,7 @@ This module is built to meet the following review criteria:
 |----------|----------------|
 | **Code Quality** | Clean architecture, max 120 lines/file, ChangeNotifier pattern |
 | **Structure** | Feature-based with separation of concerns (models, services, controllers, widgets, screens) |
-| **Firebase Usage** | Dedicated service classes for Storage, Firestore; proper error handling |
+| **Storage** | Local SQLite + file system; easily switchable to Firebase |
 | **UX Logic** | Animated transitions, loading states, empty states, responsive design |
 
 ## License
@@ -338,4 +285,4 @@ This module is created as an assessment task. Usage rights to be determined upon
 
 ## Author
 
-Built with Flutter and Firebase for MiGynae app integration.
+Built with Flutter for MiGynae app integration.

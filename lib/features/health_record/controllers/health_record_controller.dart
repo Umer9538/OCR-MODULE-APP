@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
 import '../services/ocr_service.dart';
-import '../services/storage_service.dart';
-import '../services/firestore_service.dart';
+import '../services/local_storage_service.dart';
+import '../services/local_database_service.dart';
 import '../services/image_service.dart';
 import '../constants/app_strings.dart';
 
@@ -12,8 +12,8 @@ class HealthRecordController extends ChangeNotifier {
   // Services
   final _imageService = ImageService();
   final _ocrService = OcrService();
-  final _storageService = StorageService();
-  final _firestoreService = FirestoreService();
+  final _storageService = LocalStorageService();
+  final _databaseService = LocalDatabaseService();
 
   // State
   List<HealthRecord> _records = [];
@@ -34,13 +34,9 @@ class HealthRecordController extends ChangeNotifier {
 
   /// Validate email format
   String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return AppStrings.errorEmptyEmail;
-    }
+    if (value == null || value.isEmpty) return AppStrings.errorEmptyEmail;
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return AppStrings.errorInvalidEmail;
-    }
+    if (!emailRegex.hasMatch(value)) return AppStrings.errorInvalidEmail;
     return null;
   }
 
@@ -54,7 +50,7 @@ class HealthRecordController extends ChangeNotifier {
     }
   }
 
-  /// Process image: OCR, upload, and save
+  /// Process image: OCR, save locally
   Future<bool> processImage(File imageFile, String email) async {
     final normalizedEmail = email.trim().toLowerCase();
 
@@ -62,32 +58,27 @@ class HealthRecordController extends ChangeNotifier {
       // Extract text
       _setLoading(true, AppStrings.extractingText);
       final extractedText = await _ocrService.extractText(imageFile);
+      if (extractedText.isEmpty) _setError(AppStrings.errorNoText);
 
-      if (extractedText.isEmpty) {
-        _setError(AppStrings.errorNoText);
-      }
-
-      // Upload image
+      // Save image locally
       _setLoading(true, AppStrings.uploadingImage);
-      final imageUrl = await _storageService.uploadImage(
+      final imagePath = await _storageService.saveImage(
         imageFile: imageFile,
         email: normalizedEmail,
       );
 
-      // Save record
+      // Save record to database
       _setLoading(true, AppStrings.savingRecord);
       final record = HealthRecord(
         email: normalizedEmail,
-        imageUrl: imageUrl,
+        imagePath: imagePath,
         extractedText: extractedText,
         createdAt: DateTime.now(),
       );
-      await _firestoreService.saveRecord(record);
+      await _databaseService.saveRecord(record);
 
       _setLoading(false);
       _setSuccess(AppStrings.recordSaved);
-
-      // Refresh records
       await fetchRecords(normalizedEmail);
       return true;
     } catch (e) {
@@ -100,14 +91,13 @@ class HealthRecordController extends ChangeNotifier {
   /// Fetch records by email
   Future<void> fetchRecords(String email) async {
     final normalizedEmail = email.trim().toLowerCase();
-
     _isLoading = true;
     _hasSearched = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _records = await _firestoreService.getRecordsByEmail(normalizedEmail);
+      _records = await _databaseService.getRecordsByEmail(normalizedEmail);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -116,7 +106,6 @@ class HealthRecordController extends ChangeNotifier {
     }
   }
 
-  /// Clear messages
   void clearMessages() {
     _errorMessage = null;
     _successMessage = null;

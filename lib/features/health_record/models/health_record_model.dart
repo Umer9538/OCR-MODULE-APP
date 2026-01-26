@@ -1,56 +1,53 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../constants/firebase_constants.dart';
-
 /// Model class representing a health record
 class HealthRecord {
-  final String? id;
+  final int? id;
   final String email;
-  final String imageUrl;
+  final String imagePath;
   final String extractedText;
   final DateTime createdAt;
 
   HealthRecord({
     this.id,
     required this.email,
-    required this.imageUrl,
+    required this.imagePath,
     required this.extractedText,
     required this.createdAt,
   });
 
-  /// Create a HealthRecord from Firestore document
-  factory HealthRecord.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  /// Create a HealthRecord from database map
+  factory HealthRecord.fromMap(Map<String, dynamic> map) {
     return HealthRecord(
-      id: doc.id,
-      email: data[FirebaseConstants.fieldEmail] ?? '',
-      imageUrl: data[FirebaseConstants.fieldImageUrl] ?? '',
-      extractedText: data[FirebaseConstants.fieldExtractedText] ?? '',
-      createdAt: (data[FirebaseConstants.fieldCreatedAt] as Timestamp).toDate(),
+      id: map['id'] as int?,
+      email: map['email'] as String? ?? '',
+      imagePath: map['image_path'] as String? ?? '',
+      extractedText: map['extracted_text'] as String? ?? '',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
     );
   }
 
-  /// Convert HealthRecord to Firestore document map
-  Map<String, dynamic> toFirestore() {
+  /// Convert HealthRecord to database map
+  Map<String, dynamic> toMap() {
     return {
-      FirebaseConstants.fieldEmail: email,
-      FirebaseConstants.fieldImageUrl: imageUrl,
-      FirebaseConstants.fieldExtractedText: extractedText,
-      FirebaseConstants.fieldCreatedAt: Timestamp.fromDate(createdAt),
+      if (id != null) 'id': id,
+      'email': email,
+      'image_path': imagePath,
+      'extracted_text': extractedText,
+      'created_at': createdAt.millisecondsSinceEpoch,
     };
   }
 
-  /// Create a copy of HealthRecord with optional new values
+  /// Create a copy with optional new values
   HealthRecord copyWith({
-    String? id,
+    int? id,
     String? email,
-    String? imageUrl,
+    String? imagePath,
     String? extractedText,
     DateTime? createdAt,
   }) {
     return HealthRecord(
       id: id ?? this.id,
       email: email ?? this.email,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imagePath: imagePath ?? this.imagePath,
       extractedText: extractedText ?? this.extractedText,
       createdAt: createdAt ?? this.createdAt,
     );

@@ -1,18 +1,22 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// Enum representing the image source options
 enum ImageSourceOption { camera, gallery }
 
-/// Service for picking and compressing images
+/// Service for picking images
 class ImageService {
   final ImagePicker _picker = ImagePicker();
 
+  /// Allowed image extensions
+  static const List<String> _allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+  /// Maximum file size in bytes (10MB)
+  static const int maxFileSizeBytes = 10 * 1024 * 1024;
+
   /// Pick an image from the specified source
-  /// Returns a compressed File or null if cancelled
+  /// Returns a File or null if cancelled
+  /// Throws exception if file type or size is invalid
   Future<File?> pickImage(ImageSourceOption source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -21,45 +25,38 @@ class ImageService {
             : ImageSource.gallery,
         maxWidth: 1920,
         maxHeight: 1920,
-        imageQuality: 85,
       );
 
       if (pickedFile == null) return null;
 
-      // Compress the image for faster upload
-      final compressedFile = await _compressImage(File(pickedFile.path));
-      return compressedFile;
+      final file = File(pickedFile.path);
+
+      // Validate file type
+      if (!_isValidImageType(pickedFile.path)) {
+        throw ImageServiceException(
+          'Invalid file type. Only images (${_allowedExtensions.join(", ")}) are allowed.',
+        );
+      }
+
+      // Validate file size
+      final fileSize = await file.length();
+      if (fileSize > maxFileSizeBytes) {
+        throw ImageServiceException(
+          'File too large. Maximum size is ${maxFileSizeBytes ~/ (1024 * 1024)}MB.',
+        );
+      }
+
+      return file;
     } catch (e) {
+      if (e is ImageServiceException) rethrow;
       throw ImageServiceException('Failed to pick image: $e');
     }
   }
 
-  /// Compress an image file to reduce size for upload
-  Future<File> _compressImage(File file) async {
-    try {
-      final dir = await getTemporaryDirectory();
-      final targetPath =
-          '${dir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final XFile? result = await FlutterImageCompress.compressAndGetFile(
-        file.absolute.path,
-        targetPath,
-        quality: 70,
-        minWidth: 1024,
-        minHeight: 1024,
-      );
-
-      if (result == null) {
-        // If compression fails, return original file
-        return file;
-      }
-
-      return File(result.path);
-    } catch (e) {
-      // If compression fails, return original file
-      debugPrint('Image compression failed: $e');
-      return file;
-    }
+  /// Check if file has valid image extension
+  bool _isValidImageType(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    return _allowedExtensions.contains(extension);
   }
 }
 
@@ -69,5 +66,5 @@ class ImageServiceException implements Exception {
   ImageServiceException(this.message);
 
   @override
-  String toString() => 'ImageServiceException: $message';
+  String toString() => message;
 }

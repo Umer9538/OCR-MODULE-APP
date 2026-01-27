@@ -15,7 +15,10 @@ A standalone Flutter feature module that allows users to upload health record im
 
 ### Nice-to-Have Features (Included)
 
-- Image compression before upload (70% quality JPEG)
+- Image compression (70% quality JPEG) - single compression point for optimal OCR quality
+- File type validation (jpg, jpeg, png, gif, webp only)
+- File size limit (10MB max) to prevent crashes
+- Automatic temp file cleanup after saving
 - Loading indicators with animated status messages
 - Success/error toast notifications
 - Animated empty state with floating icon
@@ -38,9 +41,9 @@ lib/
         │
         ├── services/                   # External API interactions
         │   ├── ocr_service.dart            # Google ML Kit OCR
-        │   ├── local_storage_service.dart  # Local file storage operations
+        │   ├── local_storage_service.dart  # Local file storage + compression
         │   ├── local_database_service.dart # SQLite database operations
-        │   └── image_service.dart          # Image picker + compression
+        │   └── image_service.dart          # Image picker + validation
         │
         ├── controllers/                # Business logic & state management
         │   └── health_record_controller.dart   # ChangeNotifier controller
@@ -81,7 +84,17 @@ lib/
 | State management | ChangeNotifier pattern |
 | Responsive design | ResponsiveUtils for all screen sizes |
 | Animations | Custom AnimationController-based |
-| Storage | Local SQLite database + file system |
+| Storage | Local SQLite database + App Support directory |
+
+## Image Handling
+
+| Feature | Implementation |
+|---------|----------------|
+| Allowed formats | jpg, jpeg, png, gif, webp |
+| Max file size | 10 MB |
+| Compression | 70% JPEG quality (single compression) |
+| Temp cleanup | Auto-deleted after saving |
+| Storage location | App Support directory (private, not backed up) |
 
 ## Local Storage Structure
 
@@ -99,9 +112,11 @@ Table: health_records
 ### File Storage
 
 ```
-Documents/health_records/
+AppSupport/health_records/
 └── {sanitized_email}_{timestamp}_{uuid}.jpg
 ```
+
+> **Note:** Uses App Support directory (not Documents) for private storage that won't be backed up to iCloud or visible in Files app.
 
 ## Setup Instructions
 
@@ -133,8 +148,8 @@ flutter run -d ios
 # Android
 flutter run -d android
 
-# Release build (Android)
-flutter build apk --release
+# Release build (Android) - Split by ABI for smaller size
+flutter build apk --release --split-per-abi
 ```
 
 ## Integration into Existing App
@@ -250,6 +265,8 @@ The module uses `ResponsiveUtils` for adaptive layouts:
 The module includes error handling for:
 
 - Invalid email format
+- Invalid file type (non-image files rejected)
+- File too large (>10MB rejected)
 - No image selected
 - OCR extraction failures
 - Storage failures
@@ -267,6 +284,8 @@ To test the module:
 4. Verify OCR extracts text correctly
 5. Click "Get Previous" to retrieve saved records
 6. Click on a record card to see full details in bottom sheet
+7. Try uploading non-image file (should show error)
+8. Try uploading file >10MB (should show error)
 
 ## Review Criteria
 
@@ -276,8 +295,9 @@ This module is built to meet the following review criteria:
 |----------|----------------|
 | **Code Quality** | Clean architecture, max 120 lines/file, ChangeNotifier pattern |
 | **Structure** | Feature-based with separation of concerns (models, services, controllers, widgets, screens) |
-| **Storage** | Local SQLite + file system; easily switchable to Firebase |
+| **Storage** | Local SQLite + App Support directory; easily switchable to Firebase |
 | **UX Logic** | Animated transitions, loading states, empty states, responsive design |
+| **Validation** | File type restriction, size limit, email validation |
 
 ## License
 
